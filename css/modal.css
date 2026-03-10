@@ -155,6 +155,7 @@
 }
 
 @media (max-width: 768px) {
+    /* Fullscreen Modal Override */
     .modal-content { 
         width: 100vw; 
         height: 100dvh; 
@@ -163,27 +164,60 @@
         border-top: 2px solid var(--accent);
         transform: scale(1) !important;
     }
-    .modal-header { font-size: 0.7rem; flex-wrap: wrap; gap: 10px; padding: 10px; }
-    .close-btn { width: 100%; text-align: center; padding: 8px; }
-
-    .hud-overlay { padding: 10px; }
-    .hud-logo-symbol { font-size: 2rem; }
-    .striped-text { font-size: clamp(1.2rem, 5vw, 2.25rem); letter-spacing: 1px; }
-    .dot-matrix-text { font-size: clamp(0.9rem, 4vw, 2rem); letter-spacing: 2px; }
-    .hud-title-box { padding-left: 1rem; }
     
-    .hud-bottom { grid-template-columns: 1fr; min-height: auto; padding: 5px; }
-    .hud-mission-box { border-right: none; border-bottom: 1px solid var(--hud-primary); padding: 5px; margin-bottom: 5px; }
-    .hud-mission-box h2 { font-size: 1.5rem; }
-    .hud-stats-box { padding: 5px; }
+    /* FIX: Keep header compact and prevent flex-wrapping */
+    .modal-header { font-size: 0.65rem; flex-wrap: nowrap; padding: 8px 10px; gap: 10px; justify-content: space-between; }
+    .modal-header span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; }
+    .close-btn { width: auto; padding: 4px 8px; flex-shrink: 0; margin: 0; }
 
-    .hud-btn { font-size: 0.65rem; height: 28px !important; width: 120px !important; padding: 0 10px; }
-    .btn-watch { top: 10px; right: 10px; }
-    .btn-flip { top: 42px; right: 10px; }
+    /* =======================================
+       SOMMA HUD MOBILE REDESIGN 
+       ======================================= */
+    
+    /* Break 16:9 ratio to allow vertical breathing room */
+    .somma-scene {
+        aspect-ratio: auto !important;
+        height: 50vh; 
+        min-height: 380px;
+    }
+    
+    .hud-overlay { padding: 5px; justify-content: space-between; }
+    
+    .hud-top { height: auto; padding: 5px; background: rgba(0,0,0,0.8); flex-direction: row; align-items: center; }
+    .hud-logo-box { width: 40px; border-right: 1px solid var(--hud-primary); padding-right: 5px; }
+    .hud-logo-symbol { font-size: 1.5rem; }
+    .hud-title-box { padding-left: 5px; }
+    .striped-text { font-size: 1.1rem !important; letter-spacing: 0; }
+    
+    /* Hide non-essential flavor UI to give the video breathing room */
+    .hud-middle { display: none; } 
+    .hud-spacer { display: none; }
+    
+    .hud-bottom { 
+        grid-template-columns: 1fr; 
+        min-height: auto; 
+        padding: 5px 10px; 
+        background: rgba(0,0,0,0.85); /* Solidify background for readability */
+        border-top: 1px solid var(--hud-primary);
+        gap: 5px;
+    }
+    
+    .hud-mission-box { border-right: none; padding: 0; margin-bottom: 5px; border-bottom: 1px dashed rgba(255, 60, 0, 0.3); padding-bottom: 5px; }
+    .hud-mission-box h2 { font-size: 1.1rem !important; margin-bottom: 2px; line-height: 1; }
+    .hud-sub-label { font-size: 0.6rem; padding: 2px 4px; }
+    
+    /* Reorient stats row horizontally */
+    .hud-stats-box { padding: 0; display: flex; flex-direction: column; gap: 2px; justify-content: flex-start; }
+    .stat-row { font-size: 0.6rem !important; margin-bottom: 0; border: none; }
 
+    /* Shrink and reposition buttons so they don't block the video */
+    .hud-btn { font-size: 0.55rem; height: 26px !important; width: 110px !important; padding: 0 5px; }
+    .btn-watch { top: 5px; right: 5px; }
+    .btn-flip { top: 35px; right: 5px; }
+
+    /* Misc Desc fixes */
     .desc-box { padding: 1rem; margin-top: 1rem; }
     .desc-label { font-size: 0.8rem; top: -10px; left: 10px; }
-    
     #pdf-viewer-container { padding: 1rem 0; }
     .pdf-canvas { max-width: 100%; }
 }

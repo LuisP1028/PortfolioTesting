@@ -1,4 +1,3 @@
-// Expose the logic globally so app.js can call it AFTER the HTML is injected
 window.initializeChatLogic = function() {
     const fab = document.getElementById("chat-fab");
     const container = document.getElementById("doom-chat-container");
@@ -7,46 +6,77 @@ window.initializeChatLogic = function() {
     const chatInput = document.getElementById("chat-input");
     const transmitBtn = document.getElementById("chat-transmit-btn");
 
-    // Safety check: ensure elements exist before attaching listeners
     if (!fab || !container) {
-        console.error(">> ERR: Chat DOM elements missing. Injection failed.");
+        console.error(">> ERR: Chat DOM elements missing.");
         return;
     }
 
-    // 1. Initialize State
     let chatHistory = [];
     const API_URL = "https://choppedcheese-platodoomcave.hf.space/chat";
     let isAwaitingResponse = false;
 
-    // 2. UI Toggling Logic
+    // --- KEYBOARD OVERLAP FIX (VISUAL VIEWPORT API) ---
+    const adjustForKeyboard = () => {
+        if (window.innerWidth <= 600 && container.classList.contains("active")) {
+            const vv = window.visualViewport;
+            if (vv) {
+                // Pin the container exactly to the visual viewport bounds
+                container.style.position = "fixed";
+                container.style.top = `${vv.offsetTop}px`;
+                container.style.height = `${vv.height}px`;
+                container.style.bottom = "auto";
+                container.style.left = "0";
+                container.style.right = "0";
+                container.style.width = "100vw";
+            }
+        } else {
+            // Reset to CSS defaults when closed or on desktop
+            container.style.position = "";
+            container.style.top = "";
+            container.style.height = "";
+            container.style.bottom = "";
+            container.style.left = "";
+            container.style.right = "";
+            container.style.width = "";
+        }
+        scrollToBottom();
+    };
+
+    // Listen for keyboard pop-ups and scrolls
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", adjustForKeyboard);
+        window.visualViewport.addEventListener("scroll", adjustForKeyboard);
+    }
+
     function toggleChat() {
         container.classList.toggle("active");
         if (container.classList.contains("active")) {
-            chatInput.focus();
-            scrollToBottom();
+            adjustForKeyboard();
+            setTimeout(() => {
+                chatInput.focus();
+                adjustForKeyboard(); // Double check after focus
+            }, 50);
+        } else {
+            adjustForKeyboard();
+            chatInput.blur(); // Dismisses keyboard
         }
     }
 
     fab.addEventListener("click", toggleChat);
-    closeBtn.addEventListener("click", () => container.classList.remove("active"));
+    closeBtn.addEventListener("click", () => {
+        container.classList.remove("active");
+        adjustForKeyboard();
+    });
 
     function scrollToBottom() {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // 3. DOM Message Appenders
     function appendMessage(role, text) {
         const msgDiv = document.createElement("div");
         msgDiv.classList.add("chat-msg", role);
-        
-        let prefix = "";
-        if (role === "user") prefix = "USR_> ";
-        else if (role === "villain") prefix = "DOOM_> ";
-        else if (role === "system" || role === "error") prefix = "SYS_> ";
-
-        // Securely add text and convert line breaks
+        let prefix = role === "user" ? "USR_> " : role === "villain" ? "DOOM_> " : "SYS_> ";
         msgDiv.innerHTML = `<span style="font-weight:bold; opacity:0.7;">${prefix}</span>${text.replace(/\n/g, '<br>')}`;
-        
         chatMessages.appendChild(msgDiv);
         scrollToBottom();
     }
@@ -67,58 +97,42 @@ window.initializeChatLogic = function() {
         }
     }
 
-    // 4. API Integration & Transmission
     async function handleTransmit() {
         const userText = chatInput.value.trim();
         if (!userText || isAwaitingResponse) return;
 
-        // UI Updates for User Turn
         isAwaitingResponse = true;
         chatInput.value = "";
         appendMessage("user", userText);
         showTypingIndicator();
 
         try {
-            // Send POST request matching the FastAPI Pydantic Model
             const response = await fetch(API_URL, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    message: userText,
-                    history: chatHistory
-                })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: userText, history: chatHistory })
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP Error: ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+            
             const data = await response.json();
-            const villainReply = data.response;
-
-            // UI Updates for Villain Turn
             removeTypingIndicator();
-            appendMessage("villain", villainReply);
+            appendMessage("villain", data.response);
 
-            // Update Global State context for the next turn
             chatHistory.push({ role: "user", content: userText });
-            chatHistory.push({ role: "assistant", content: villainReply });
-
+            chatHistory.push({ role: "assistant", content: data.response });
         } catch (error) {
-            console.error("DOOM Chat API Error:", error);
             removeTypingIndicator();
             appendMessage("error", `CONNECTION SEVERED. [${error.message}]`);
         } finally {
             isAwaitingResponse = false;
-            chatInput.focus();
+            // Prevent auto-focusing on mobile so the keyboard doesn't violently pop back open if user minimized it
+            if (window.innerWidth > 600) chatInput.focus();
+            setTimeout(scrollToBottom, 50);
         }
     }
 
-    // 5. Event Listeners
     transmitBtn.addEventListener("click", handleTransmit);
-    
     chatInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
